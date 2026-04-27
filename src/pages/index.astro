@@ -1,0 +1,572 @@
+---
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spotify Stats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --green: #1DB954;
+        --green-dim: #158a3e;
+        --black: #0a0a0a;
+        --surface: #111111;
+        --surface2: #1a1a1a;
+        --border: #2a2a2a;
+        --text: #f0f0f0;
+        --muted: #666;
+      }
+
+      html, body {
+        height: 100%;
+        background: var(--black);
+        color: var(--text);
+        font-family: 'Space Mono', monospace;
+        overflow-x: hidden;
+      }
+
+      /* Noise texture overlay */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.4;
+      }
+
+      /* Ambient glow */
+      .glow-orb {
+        position: fixed;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(29,185,84,0.07) 0%, transparent 70%);
+        top: -200px;
+        right: -200px;
+        pointer-events: none;
+        animation: drift 12s ease-in-out infinite alternate;
+      }
+
+      @keyframes drift {
+        from { transform: translate(0, 0); }
+        to   { transform: translate(-60px, 80px); }
+      }
+
+      /* Layout */
+      .page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        position: relative;
+      }
+
+      /* Login screen */
+      #login-screen {
+        text-align: center;
+        animation: fadeUp 0.6s ease both;
+      }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      .logo-mark {
+        font-family: 'Syne', sans-serif;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--green);
+        margin-bottom: 2rem;
+      }
+
+      .hero-title {
+        font-family: 'Syne', sans-serif;
+        font-size: clamp(3rem, 10vw, 6rem);
+        font-weight: 800;
+        line-height: 0.9;
+        letter-spacing: -0.03em;
+        margin-bottom: 1.5rem;
+      }
+
+      .hero-title span {
+        color: var(--green);
+        display: block;
+      }
+
+      .hero-sub {
+        color: var(--muted);
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        margin-bottom: 3rem;
+        max-width: 320px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.8;
+      }
+
+      .login-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--green);
+        color: #000;
+        border: none;
+        padding: 1rem 2.5rem;
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        transition: background 0.2s, transform 0.15s;
+        position: relative;
+      }
+
+      .login-btn:hover {
+        background: #1ed760;
+        transform: translateY(-2px);
+      }
+
+      .login-btn:active { transform: translateY(0); }
+
+      .login-btn svg { width: 18px; height: 18px; }
+
+      /* Loading screen */
+      #loading-screen {
+        display: none;
+        text-align: center;
+        animation: fadeUp 0.4s ease both;
+      }
+
+      .loader-ring {
+        width: 48px;
+        height: 48px;
+        border: 2px solid var(--border);
+        border-top-color: var(--green);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 1.5rem;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .loader-text {
+        color: var(--muted);
+        font-size: 0.75rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+
+      /* Stats screen */
+      #stats-screen {
+        display: none;
+        width: 100%;
+        max-width: 720px;
+        animation: fadeUp 0.6s ease both;
+      }
+
+      .stats-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 2.5rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .stats-title {
+        font-family: 'Syne', sans-serif;
+        font-size: clamp(1.5rem, 4vw, 2.2rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .stats-title em {
+        color: var(--green);
+        font-style: normal;
+      }
+
+      .time-filter {
+        display: flex;
+        gap: 0.25rem;
+      }
+
+      .filter-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-family: 'Space Mono', monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.4rem 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .filter-btn:hover { border-color: var(--green); color: var(--text); }
+      .filter-btn.active { border-color: var(--green); color: var(--green); background: rgba(29,185,84,0.08); }
+
+      /* Track list */
+      .track-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .track-item {
+        display: grid;
+        grid-template-columns: 2.5rem 3rem 1fr auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+        background: var(--surface);
+        border: 1px solid transparent;
+        transition: border-color 0.2s, background 0.2s;
+        cursor: default;
+        animation: slideIn 0.4s ease both;
+      }
+
+      .track-item:hover {
+        background: var(--surface2);
+        border-color: var(--border);
+      }
+
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-12px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+
+      .track-num {
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .track-art {
+        width: 3rem;
+        height: 3rem;
+        object-fit: cover;
+        display: block;
+        background: var(--border);
+      }
+
+      .track-info { overflow: hidden; }
+
+      .track-name {
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.2rem;
+      }
+
+      .track-artist {
+        font-size: 0.7rem;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        letter-spacing: 0.03em;
+      }
+
+      .track-pop {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.3rem;
+        min-width: 48px;
+      }
+
+      .pop-val {
+        font-size: 0.65rem;
+        color: var(--green);
+        letter-spacing: 0.05em;
+      }
+
+      .pop-bar {
+        width: 48px;
+        height: 2px;
+        background: var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .pop-bar-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: var(--green);
+        transition: width 0.6s ease;
+      }
+
+      /* Error */
+      .error-box {
+        border: 1px solid #ff4444;
+        background: rgba(255,68,68,0.05);
+        padding: 1rem 1.5rem;
+        color: #ff6666;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        line-height: 1.8;
+        max-width: 400px;
+        text-align: center;
+      }
+
+      .error-box strong { display: block; color: #ff4444; margin-bottom: 0.5rem; font-size: 0.85rem; }
+
+      /* Divider line */
+      .divider {
+        width: 40px;
+        height: 1px;
+        background: var(--green);
+        margin: 1.5rem auto;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: var(--black); }
+      ::-webkit-scrollbar-thumb { background: var(--border); }
+    </style>
+  </head>
+  <body>
+    <div class="glow-orb"></div>
+    <div class="page">
+
+      <!-- LOGIN -->
+      <div id="login-screen">
+        <p class="logo-mark">▶ Spotify Stats</p>
+        <h1 class="hero-title">YOUR<span>TOP TRACKS.</span></h1>
+        <div class="divider"></div>
+        <p class="hero-sub">Connect your Spotify account to see what you've been listening to most.</p>
+        <button class="login-btn" onclick="login()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+          Connect Spotify
+        </button>
+      </div>
+
+      <!-- LOADING -->
+      <div id="loading-screen">
+        <div class="loader-ring"></div>
+        <p class="loader-text">Fetching your data...</p>
+      </div>
+
+      <!-- STATS -->
+      <div id="stats-screen">
+        <div class="stats-header">
+          <h2 class="stats-title">TOP <em>TRACKS</em></h2>
+          <div class="time-filter">
+            <button class="filter-btn active" data-range="short_term">4 WKS</button>
+            <button class="filter-btn" data-range="medium_term">6 MOS</button>
+            <button class="filter-btn" data-range="long_term">ALL TIME</button>
+          </div>
+        </div>
+        <div class="track-list" id="track-list"></div>
+      </div>
+
+    </div>
+
+    <script is:inline>
+      // ─── CONFIG ──────────────────────────────────────────────
+      const CLIENT_ID   = "YOUR_CLIENT_ID"
+      const REDIRECT_URI = window.location.origin + window.location.pathname
+      const SCOPES      = "user-top-read"
+
+      // ─── PKCE HELPERS ────────────────────────────────────────
+      function generateCodeVerifier(len = 128) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'
+        return Array.from(crypto.getRandomValues(new Uint8Array(len)))
+          .map(b => chars[b % chars.length]).join('')
+      }
+
+      async function generateCodeChallenge(verifier) {
+        const data    = new TextEncoder().encode(verifier)
+        const digest  = await crypto.subtle.digest('SHA-256', data)
+        return btoa(String.fromCharCode(...new Uint8Array(digest)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+      }
+
+      // ─── LOGIN ───────────────────────────────────────────────
+      async function login() {
+        const verifier   = generateCodeVerifier()
+        const challenge  = await generateCodeChallenge(verifier)
+        sessionStorage.setItem('pkce_verifier', verifier)
+
+        const url = new URL('https://accounts.spotify.com/authorize')
+        url.searchParams.set('client_id',             CLIENT_ID)
+        url.searchParams.set('response_type',         'code')
+        url.searchParams.set('redirect_uri',          REDIRECT_URI)
+        url.searchParams.set('scope',                 SCOPES)
+        url.searchParams.set('code_challenge_method', 'S256')
+        url.searchParams.set('code_challenge',        challenge)
+
+        window.location.href = url.toString()
+      }
+
+      // ─── TOKEN EXCHANGE (PKCE — no client secret needed) ─────
+      async function exchangeCode(code) {
+        const verifier = sessionStorage.getItem('pkce_verifier')
+        if (!verifier) throw new Error('Missing PKCE verifier. Please log in again.')
+
+        const res = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type:    'authorization_code',
+            code,
+            redirect_uri:  REDIRECT_URI,
+            client_id:     CLIENT_ID,
+            code_verifier: verifier,
+          })
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error_description || `Token exchange failed (${res.status})`)
+        }
+        return res.json()
+      }
+
+      // ─── FETCH TOP TRACKS ─────────────────────────────────────
+      async function fetchTopTracks(token, timeRange = 'short_term') {
+        const res = await fetch(
+          `https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=${timeRange}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (!res.ok) throw new Error(`Spotify API error (${res.status})`)
+        return res.json()
+      }
+
+      // ─── RENDER TRACKS ────────────────────────────────────────
+      function renderTracks(items) {
+        const list = document.getElementById('track-list')
+        list.innerHTML = items.map((t, i) => {
+          const img     = t.album?.images?.[2]?.url || t.album?.images?.[0]?.url || ''
+          const artists = t.artists.map(a => a.name).join(', ')
+          const pop     = t.popularity ?? 0
+          const delay   = i * 35
+
+          return `
+            <div class="track-item" style="animation-delay:${delay}ms">
+              <span class="track-num">${String(i + 1).padStart(2, '0')}</span>
+              ${img ? `<img class="track-art" src="${img}" alt="" loading="lazy"/>` : '<div class="track-art"></div>'}
+              <div class="track-info">
+                <div class="track-name">${escHtml(t.name)}</div>
+                <div class="track-artist">${escHtml(artists)}</div>
+              </div>
+              <div class="track-pop">
+                <span class="pop-val">${pop}</span>
+                <div class="pop-bar"><div class="pop-bar-fill" style="width:${pop}%"></div></div>
+              </div>
+            </div>`
+        }).join('')
+      }
+
+      function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+      }
+
+      // ─── ERROR ────────────────────────────────────────────────
+      function showError(msg) {
+        show('login-screen')
+        document.querySelector('#login-screen').insertAdjacentHTML('beforeend', `
+          <div class="error-box" style="margin-top:2rem">
+            <strong>Something went wrong</strong>${escHtml(msg)}
+          </div>`)
+      }
+
+      // ─── SCREEN SWITCHER ──────────────────────────────────────
+      function show(id) {
+        ['login-screen','loading-screen','stats-screen'].forEach(s => {
+          document.getElementById(s).style.display = s === id ? '' : 'none'
+        })
+      }
+
+      // ─── TIME FILTER BUTTONS ──────────────────────────────────
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+          btn.classList.add('active')
+          const token = sessionStorage.getItem('spotify_token')
+          if (!token) return
+          show('loading-screen')
+          try {
+            const data = await fetchTopTracks(token, btn.dataset.range)
+            renderTracks(data.items)
+            show('stats-screen')
+          } catch(e) { showError(e.message) }
+        })
+      })
+
+      // ─── INIT ─────────────────────────────────────────────────
+      ;(async () => {
+        const params = new URLSearchParams(window.location.search)
+        const code   = params.get('code')
+        const error  = params.get('error')
+
+        if (error) {
+          show('login-screen')
+          showError(`Spotify returned: ${error}`)
+          return
+        }
+
+        if (code) {
+          show('loading-screen')
+          // Clean URL
+          window.history.replaceState({}, '', window.location.pathname)
+
+          try {
+            const tokenData = await exchangeCode(code)
+            sessionStorage.setItem('spotify_token', tokenData.access_token)
+            sessionStorage.removeItem('pkce_verifier')
+
+            const data = await fetchTopTracks(tokenData.access_token)
+            renderTracks(data.items)
+            show('stats-screen')
+          } catch (e) {
+            showError(e.message)
+          }
+          return
+        }
+
+        // Check for existing token
+        const saved = sessionStorage.getItem('spotify_token')
+        if (saved) {
+          show('loading-screen')
+          try {
+            const data = await fetchTopTracks(saved)
+            renderTracks(data.items)
+            show('stats-screen')
+          } catch {
+            sessionStorage.removeItem('spotify_token')
+            show('login-screen')
+          }
+          return
+        }
+
+        show('login-screen')
+      })()
+    </script>
+  </body>
+</html>
