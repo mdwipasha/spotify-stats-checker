@@ -453,7 +453,7 @@
       // ─── FETCH TOP TRACKS ─────────────────────────────────────
       async function fetchTopTracks(token, timeRange = 'short_term') {
         const res = await fetch(
-          `https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=${timeRange}`,
+          `https://api.spotify.com/v1/me/player/recently-played`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (!res.ok) throw new Error(`Spotify API error (${res.status})`)
