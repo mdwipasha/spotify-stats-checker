@@ -34,7 +34,6 @@
         overflow-x: hidden;
       }
 
-      /* Noise texture overlay */
       body::before {
         content: '';
         position: fixed;
@@ -45,7 +44,6 @@
         opacity: 0.4;
       }
 
-      /* Ambient glow */
       .glow-orb {
         position: fixed;
         width: 600px;
@@ -63,7 +61,6 @@
         to   { transform: translate(-60px, 80px); }
       }
 
-      /* Layout */
       .page {
         min-height: 100vh;
         display: flex;
@@ -74,7 +71,6 @@
         position: relative;
       }
 
-      /* Login screen */
       #login-screen {
         text-align: center;
         animation: fadeUp 0.6s ease both;
@@ -136,19 +132,12 @@
         cursor: pointer;
         clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
         transition: background 0.2s, transform 0.15s;
-        position: relative;
       }
 
-      .login-btn:hover {
-        background: #1ed760;
-        transform: translateY(-2px);
-      }
-
+      .login-btn:hover { background: #1ed760; transform: translateY(-2px); }
       .login-btn:active { transform: translateY(0); }
-
       .login-btn svg { width: 18px; height: 18px; }
 
-      /* Loading screen */
       #loading-screen {
         display: none;
         text-align: center;
@@ -174,7 +163,6 @@
         text-transform: uppercase;
       }
 
-      /* Stats screen */
       #stats-screen {
         display: none;
         width: 100%;
@@ -198,15 +186,9 @@
         letter-spacing: -0.02em;
       }
 
-      .stats-title em {
-        color: var(--green);
-        font-style: normal;
-      }
+      .stats-title em { color: var(--green); font-style: normal; }
 
-      .time-filter {
-        display: flex;
-        gap: 0.25rem;
-      }
+      .time-filter { display: flex; gap: 0.25rem; }
 
       .filter-btn {
         background: none;
@@ -224,12 +206,7 @@
       .filter-btn:hover { border-color: var(--green); color: var(--text); }
       .filter-btn.active { border-color: var(--green); color: var(--green); background: rgba(29,185,84,0.08); }
 
-      /* Track list */
-      .track-list {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
+      .track-list { display: flex; flex-direction: column; gap: 2px; }
 
       .track-item {
         display: grid;
@@ -244,10 +221,7 @@
         animation: slideIn 0.4s ease both;
       }
 
-      .track-item:hover {
-        background: var(--surface2);
-        border-color: var(--border);
-      }
+      .track-item:hover { background: var(--surface2); border-color: var(--border); }
 
       @keyframes slideIn {
         from { opacity: 0; transform: translateX(-12px); }
@@ -298,11 +272,7 @@
         min-width: 48px;
       }
 
-      .pop-val {
-        font-size: 0.65rem;
-        color: var(--green);
-        letter-spacing: 0.05em;
-      }
+      .pop-val { font-size: 0.65rem; color: var(--green); letter-spacing: 0.05em; }
 
       .pop-bar {
         width: 48px;
@@ -314,14 +284,12 @@
 
       .pop-bar-fill {
         position: absolute;
-        top: 0;
-        left: 0;
+        top: 0; left: 0;
         height: 100%;
         background: var(--green);
         transition: width 0.6s ease;
       }
 
-      /* Error */
       .error-box {
         border: 1px solid #ff4444;
         background: rgba(255,68,68,0.05);
@@ -332,19 +300,13 @@
         line-height: 1.8;
         max-width: 400px;
         text-align: center;
+        margin: 2rem auto 0;
       }
 
       .error-box strong { display: block; color: #ff4444; margin-bottom: 0.5rem; font-size: 0.85rem; }
 
-      /* Divider line */
-      .divider {
-        width: 40px;
-        height: 1px;
-        background: var(--green);
-        margin: 1.5rem auto;
-      }
+      .divider { width: 40px; height: 1px; background: var(--green); margin: 1.5rem auto; }
 
-      /* Scrollbar */
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: var(--black); }
       ::-webkit-scrollbar-thumb { background: var(--border); }
@@ -389,9 +351,10 @@
 
     <script is:inline>
       // ─── CONFIG ──────────────────────────────────────────────
-      const CLIENT_ID   = "895f5f78223a430c99b461b1233c0fe3"
+      const CLIENT_ID    = "895f5f78223a430c99b461b1233c0fe3"
       const REDIRECT_URI = window.location.origin + window.location.pathname
-      const SCOPES = "user-top-read user-read-recently-played"
+      // Only user-top-read is needed for /me/top/tracks
+      const SCOPES       = "user-top-read"
 
       // ─── PKCE HELPERS ────────────────────────────────────────
       function generateCodeVerifier(len = 128) {
@@ -401,17 +364,17 @@
       }
 
       async function generateCodeChallenge(verifier) {
-        const data    = new TextEncoder().encode(verifier)
-        const digest  = await crypto.subtle.digest('SHA-256', data)
+        const data   = new TextEncoder().encode(verifier)
+        const digest = await crypto.subtle.digest('SHA-256', data)
         return btoa(String.fromCharCode(...new Uint8Array(digest)))
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
       }
 
       // ─── LOGIN ───────────────────────────────────────────────
       async function login() {
-		sessionStorage.clear()
-        const verifier   = generateCodeVerifier()
-        const challenge  = await generateCodeChallenge(verifier)
+        sessionStorage.clear()
+        const verifier  = generateCodeVerifier()
+        const challenge = await generateCodeChallenge(verifier)
         sessionStorage.setItem('pkce_verifier', verifier)
 
         const url = new URL('https://accounts.spotify.com/authorize')
@@ -421,12 +384,12 @@
         url.searchParams.set('scope',                 SCOPES)
         url.searchParams.set('code_challenge_method', 'S256')
         url.searchParams.set('code_challenge',        challenge)
-		url.searchParams.set('show_dialog', 'true')
+        url.searchParams.set('show_dialog',           'true')
 
         window.location.href = url.toString()
       }
 
-      // ─── TOKEN EXCHANGE (PKCE — no client secret needed) ─────
+      // ─── TOKEN EXCHANGE ───────────────────────────────────────
       async function exchangeCode(code) {
         const verifier = sessionStorage.getItem('pkce_verifier')
         if (!verifier) throw new Error('Missing PKCE verifier. Please log in again.')
@@ -451,18 +414,29 @@
       }
 
       // ─── FETCH TOP TRACKS ─────────────────────────────────────
+      // FIX: was incorrectly using /me/player/recently-played which:
+      //   1. Requires "user-read-recently-played" scope (causes 403)
+      //   2. Does not support time_range (breaks filter buttons)
+      //   3. Returns { items: [{ track, played_at }] } not { items: [track] }
       async function fetchTopTracks(token, timeRange = 'short_term') {
         const res = await fetch(
-          `https://api.spotify.com/v1/me/player/recently-played`,
+          `https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=${timeRange}`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
-        if (!res.ok) throw new Error(`Spotify API error (${res.status})`)
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error?.message || `Spotify API error (${res.status})`)
+        }
         return res.json()
       }
 
       // ─── RENDER TRACKS ────────────────────────────────────────
       function renderTracks(items) {
         const list = document.getElementById('track-list')
+        if (!items?.length) {
+          list.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;padding:1rem 0">No tracks found for this time range.</p>'
+          return
+        }
         list.innerHTML = items.map((t, i) => {
           const img     = t.album?.images?.[2]?.url || t.album?.images?.[0]?.url || ''
           const artists = t.artists.map(a => a.name).join(', ')
@@ -491,11 +465,10 @@
 
       // ─── ERROR ────────────────────────────────────────────────
       function showError(msg) {
+        document.querySelector('#login-screen .error-box')?.remove()
         show('login-screen')
         document.querySelector('#login-screen').insertAdjacentHTML('beforeend', `
-          <div class="error-box" style="margin-top:2rem">
-            <strong>Something went wrong</strong>${escHtml(msg)}
-          </div>`)
+          <div class="error-box"><strong>Something went wrong</strong>${escHtml(msg)}</div>`)
       }
 
       // ─── SCREEN SWITCHER ──────────────────────────────────────
@@ -535,7 +508,6 @@
 
         if (code) {
           show('loading-screen')
-          // Clean URL
           window.history.replaceState({}, '', window.location.pathname)
 
           try {
@@ -552,7 +524,6 @@
           return
         }
 
-        // Check for existing token
         const saved = sessionStorage.getItem('spotify_token')
         if (saved) {
           show('loading-screen')
