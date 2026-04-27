@@ -391,7 +391,7 @@
       // ─── CONFIG ──────────────────────────────────────────────
       const CLIENT_ID   = "895f5f78223a430c99b461b1233c0fe3"
       const REDIRECT_URI = window.location.origin + window.location.pathname
-      const SCOPES      = "user-top-read"
+      const SCOPES = "user-top-read user-read-recently-played"
 
       // ─── PKCE HELPERS ────────────────────────────────────────
       function generateCodeVerifier(len = 128) {
@@ -409,6 +409,7 @@
 
       // ─── LOGIN ───────────────────────────────────────────────
       async function login() {
+		sessionStorage.clear()
         const verifier   = generateCodeVerifier()
         const challenge  = await generateCodeChallenge(verifier)
         sessionStorage.setItem('pkce_verifier', verifier)
@@ -420,6 +421,7 @@
         url.searchParams.set('scope',                 SCOPES)
         url.searchParams.set('code_challenge_method', 'S256')
         url.searchParams.set('code_challenge',        challenge)
+		url.searchParams.set('show_dialog', 'true')
 
         window.location.href = url.toString()
       }
